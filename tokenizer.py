@@ -154,10 +154,7 @@ class BPEncoder:
         
         return stoi, itos
     
-    def encode(self, inp_file):
-        with open(inp_file, 'r', encoding='utf-8') as file:
-            data = file.read().splitlines()[:10]
-            
+    def encode(self, data):
         stoi, _ = self.get_functions()
             
         return [[stoi[t] for t in f'^ {line} *'.split()] for line in data]
