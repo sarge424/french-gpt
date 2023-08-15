@@ -184,8 +184,8 @@ class Transformer(nn.Module):
         if y is None:
             loss = None
         else:
-            l = logits.view(b * t, v)
-            yl = y.view(b * t)
+            l = logits.contiguous().view(b * t, v)
+            yl = y.contiguous().view(b * t)
             loss = F.cross_entropy(l, yl)
         
         return logits, loss

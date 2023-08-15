@@ -157,7 +157,7 @@ class BPEncoder:
     def encode(self, data):
         stoi, _ = self.get_functions()
             
-        return [[stoi[t] for t in f'^ {line} *'.split()] for line in data]
+        return [[stoi[t] for t in line] for line in data]
     
     def decode(self, data):
         _, itos = self.get_functions()
