@@ -51,7 +51,7 @@ class BPEncoder:
         with open(filepath, 'w', encoding='utf-8') as file:
             json.dump([obj.to_json() for obj in self.tokens], file)
         
-    def get_corpus(self, filepath):
+    def use_corpus(self, filepath):
         with open(filepath, 'r', encoding='utf-8') as file:
             raw_data = file.read()
         
@@ -72,8 +72,8 @@ class BPEncoder:
         
         return corpus
             
-    def learn(self, inp_file,tlen):
-        corpusdict = self.get_corpus(inp_file)
+    def learn(self, inp_file, tlen):
+        corpusdict = self.use_corpus(inp_file)
         
         #split the corpus into two lists for easier access.
         #each word is split with spaces to make token searching simpler
@@ -147,10 +147,22 @@ class BPEncoder:
                 word = word.replace(token.chs, f' {token.ch} ')
         word = word.split()
         return word
+
+    def get_functions(self):
+        stoi = {t.ch: i for i,t in enumerate(self.tokens)}
+        itos = {i: t.ch for i,t in enumerate(self.tokens)}
+        
+        return stoi, itos
     
+    def encode(self, inp_file):
+        with open(inp_file, 'r', encoding='utf-8') as file:
+            data = file.read().splitlines()[:10]
+            
+        stoi, _ = self.get_functions()
+            
+        return [[stoi[t] for t in f'^ {line} *'.split()] for line in data]
     
-b = BPEncoder()
-#b.learn('langgpt/data/data.txt', 300)
-#b.save_tokens('langgpt/data/tokens.json')
-b.load_tokens('langgpt/data/tokens.json')
-b.tokenize_file('langgpt/data/data.txt', 'langgpt/data/data_e.txt')
+    def decode(self, data):
+        _, itos = self.get_functions()
+            
+        return [[itos[t] for t in line] for line in data]
