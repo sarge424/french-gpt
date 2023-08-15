@@ -14,7 +14,7 @@ class Token:
         return Token(self.ch + other.ch, (self.ch, other.ch))
 
     def __repr__(self):
-        return self.ch
+        return f'{self.ch}'
 
     def __eq__(self, other):
         return self.ch == other.ch
@@ -29,17 +29,27 @@ class Token:
             count += wcount * c
         return count
 
-    def json_dict(self):
+    def to_json(self):
         return {'ch': self.ch, 'parents': self.parents}
+
+    def from_json(d):
+        return Token(d['ch'], d['parents'])
 
 class BPEncoder:
     
     def __init__(self):
         self.tokens = []
+     
+    def load_tokens(self, filepath):
+        with open(filepath, 'r', encoding='utf-8') as file:
+            j = file.read()
+            
+        x = json.loads(j)
+        self.tokens = [Token.from_json(d) for d in x]
         
     def save_tokens(self, filepath):
         with open(filepath, 'w', encoding='utf-8') as file:
-            json.dump([obj.json_dict() for obj in self.tokens], file)
+            json.dump([obj.to_json() for obj in self.tokens], file)
         
     def get_corpus(self, filepath):
         with open(filepath, 'r', encoding='utf-8') as file:
@@ -116,6 +126,31 @@ class BPEncoder:
         #add special tokens
         self.tokens = [Token('*'), Token('^'), Token('/')] + self.tokens
         
+    def tokenize_file(self, inp_file, out_file):
+        with open(inp_file, 'r', encoding='utf-8') as file:
+            data = [line.split() for line in file.read().splitlines()]
+        
+        data_t = []
+        for i in range(len(data)):
+            line_t = []
+            for j in range(len(data[i])):
+                line_t.extend(self.tokenize(data[i][j]))
+            data_t.append(' '.join(line_t))
+        
+        with open(out_file, 'w', encoding='utf-8') as file:
+            file.write('\n'.join(data_t))
+    
+    def tokenize(self, word):
+        word = f' {" ".join(c for c in word)} '
+        for token in self.tokens:
+            if token.chs in word:
+                word = word.replace(token.chs, f' {token.ch} ')
+        word = word.split()
+        return word
+    
+    
 b = BPEncoder()
-b.learn('langgpt/data/data.txt', 100)
-b.save_tokens('langgpt/data/tokens.json')
+#b.learn('langgpt/data/data.txt', 300)
+#b.save_tokens('langgpt/data/tokens.json')
+b.load_tokens('langgpt/data/tokens.json')
+b.tokenize_file('langgpt/data/data.txt', 'langgpt/data/data_e.txt')
