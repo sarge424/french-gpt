@@ -33,7 +33,12 @@ class Token:
         return {'ch': self.ch, 'parents': self.parents}
 
     def from_json(d):
-        return Token(d['ch'], d['parents'])
+        par = d['parents']
+        
+        if par is None:
+            return Token(d['ch'])
+        else:
+            return Token(d['ch'], tuple(par))
 
 class BPEncoder:
     
@@ -68,12 +73,13 @@ class BPEncoder:
         #tokens is a sorted list of Tokens of 1 char length (excluding spaces and special tokens)
         tokens = set(c for c in raw_data if c not in ['\n', ' ', '/'])
         tokens = sorted(list(tokens))
-        self.tokens = [Token(t) for t in tokens]
+        tokens = [Token(t) for t in tokens]
         
-        return corpus
+        return corpus, tokens
             
     def learn(self, inp_file, tlen):
-        corpusdict = self.use_corpus(inp_file)
+        corpusdict, tokens = self.use_corpus(inp_file)
+        
         
         #split the corpus into two lists for easier access.
         #each word is split with spaces to make token searching simpler
@@ -81,6 +87,15 @@ class BPEncoder:
         for k, v in corpusdict.items():
             corpus.append(' ' + ' '.join(c for c in k) + ' ')
             ccounts.append(v)
+        
+        if len(self.tokens) == 0:
+            self.tokens = tokens
+        else:    
+            print('editing.', corpus[:10])
+            for i in range(len(corpus)):
+                for token in self.tokens:
+                    corpus[i] = corpus[i].replace(token.chs, f' {token.ch} ')
+            print('continuing from file.', corpus[:10])
         
         #list of tokens that need their counts (and counts of their children) to be updated
         newtokens = [t for t in self.tokens]
@@ -163,3 +178,9 @@ class BPEncoder:
         _, itos = self.get_functions()
             
         return [[itos[t] for t in line] for line in data]
+    
+b = BPEncoder()
+b.load_tokens('langgpt/data/tokens.json')
+b.learn('langgpt/data/data.txt', 600)
+#b.save_tokens('langgpt/data/tokens2.json')
+#b.tokenize_file('langgpt/data/sp.txt', 'langgpt/data/sp_e.txt')

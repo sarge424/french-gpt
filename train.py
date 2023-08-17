@@ -6,20 +6,20 @@ from tokenizer import BPEncoder
 from transformer import Transformer
 
 #HYPERPARAMETERS:---------------------------------------------
-device = 'cpu'
+device = 'cuda'
 n_heads = 4
 n_channels = 32
 n_layers = 2
-block_size = 10
+block_size = 200
 batch_size = 4
-dropout = 0.1
+dropout = 0.0
 
 
 
 #Read and encode the data
 print('reading data...')
-data = open('langgpt/data/data_e.txt', 'r', encoding='utf-8')
-data = [['^'] + line.split() + ['*'] for line in data.read().splitlines()]
+data = open('langgpt/data/data_e2.txt', 'r', encoding='utf-8')
+data = [['^'] + line.split() + ['*'] for line in data.read().splitlines()[:101]]
 
 print('encoding...')
 bpe = BPEncoder()
@@ -31,33 +31,36 @@ data = bpe.encode(data)
 mlen = max(len(line) for line in data)
 print('max len is', mlen)
 vsize = len(bpe.tokens)
-max_iters = 100
+max_iters = 5000
+print('max iters is', max_iters)
 learning_rate = 1e-2
 
 val_loss_iters = 100
-training_batches = 10
+training_batches = 500
+val_size = 20
+test_size = 1
 
 #Split the dataset into examples of block_size
 print('creating dataset...', end='')
 x, y = [],[]
 for line in data:
     assert 2 in line, 'no / in ' + ' '.join(str(i) for i in line)
-    line = ([0] * mlen) + line
+    line = ([0] * max(mlen, block_size)) + line
     sp = line.index(2) + 1
     st = sp-block_size
     for i in range(st, len(line)-block_size):
         en = i + block_size
         x.append(line[i:en])
         y.append(line[i+1:en+1])
-        
+      
 x = torch.tensor(x, dtype=torch.long)
 y = torch.tensor(y, dtype=torch.long)
 
 indices = [i for i in range(x.shape[0])]
 random.shuffle(indices)
-itr = torch.tensor(indices[:-6000], dtype=torch.long)
-ival = torch.tensor(indices[-6000:-3000], dtype=torch.long)
-itest = torch.tensor(indices[-3000:], dtype=torch.long)
+itr = torch.tensor(indices[:-(val_size + test_size)], dtype=torch.long)
+ival = torch.tensor(indices[-val_size:-test_size], dtype=torch.long)
+itest = torch.tensor(indices[-test_size:], dtype=torch.long)
 
 xtr, ytr = x[itr], y[itr]
 xval, yval = x[ival], y[ival]
@@ -93,23 +96,22 @@ def val_loss():
 #Create the model
 print('creating model...', end='')
 model = Transformer(
-    device=device,
-    
     heads=n_heads,
     channels=n_channels,
     growth=4,
     dropout=dropout,
     depth=n_layers,
-    
     vsize=vsize,
     mlen=block_size,
-)
+    device=device
+).to(device)
 print('created (', model.num_params(), ' params).', sep='')
 optimizer = torch.optim.AdamW(model.parameters(), lr=learning_rate)
 
 
 #Train the model
 model.train()
+losses = []
 for i in range(max_iters):
     xb, yb = get_batch('train')
     _, loss = model(xb, yb)
@@ -118,8 +120,12 @@ for i in range(max_iters):
     loss.backward()
     optimizer.step()
 
-    if i % training_batches == 0:
-        print(i, loss.item(), val_loss())
+    losses.append(loss.item())
+
+    if i % training_batches == 0 or i == max_iters-1:
+        time = datetime.now().strftime('%H:%M:%S')
+        print(time ,i, sum(losses)/len(losses), val_loss())
+        losses = []
 
 
 #Save the model
