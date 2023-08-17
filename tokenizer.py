@@ -1,4 +1,8 @@
 import json
+import concurrent.futures
+
+def count_token_in_corpus(token, corpus, ccounts):
+    return token.count_in(corpus, ccounts)
 
 class Token:
     def __init__(self, c, parents=None):
@@ -88,20 +92,21 @@ class BPEncoder:
             corpus.append(' ' + ' '.join(c for c in k) + ' ')
             ccounts.append(v)
         
+        #continue from existing tokens if they were already loaded
         if len(self.tokens) == 0:
             self.tokens = tokens
         else:    
-            print('editing.', corpus[:10])
             for i in range(len(corpus)):
                 for token in self.tokens:
                     corpus[i] = corpus[i].replace(token.chs, f' {token.ch} ')
-            print('continuing from file.', corpus[:10])
+            print('continuing from file.')
         
         #list of tokens that need their counts (and counts of their children) to be updated
         newtokens = [t for t in self.tokens]
         
         counts = {t: t.count_in(corpus, ccounts) for t in self.tokens} #count of each token
         used = {t: True for t in self.tokens}                          #is this token already in vocab?
+
         
         print('init:', len(self.tokens), 'chars found.')
         
@@ -114,10 +119,17 @@ class BPEncoder:
             pairs = [nt + t for nt in newtokens for t in self.tokens]
             pairs += [t + nt for nt in newtokens for t in self.tokens if (t+nt) not in pairs]
             
+            #multithreading
+            pool = concurrent.futures.ThreadPoolExecutor(max_workers=50)
+            futures = {}
             #find the count for newly made tokens and add them to the count pool
             for t in pairs:
-                tc = t.count_in(corpus, ccounts)
-                counts[t] = tc
+                #tc = t.count_in(corpus, ccounts)
+                futures[t] = pool.submit(count_token_in_corpus, t, corpus, ccounts)
+            pool.shutdown(wait=True)
+                
+            for t in pairs:
+                counts[t] = futures[t].result()
                 used[t] = False
             
             #add the best token to the vocab
@@ -139,7 +151,8 @@ class BPEncoder:
                 corpus[i] = corpus[i].replace(best.chs, f' {best.ch} ')
                 
         #add special tokens
-        self.tokens = [Token('*'), Token('^'), Token('/')] + self.tokens
+        if Token('*') not in self.tokens:
+            self.tokens = [Token('*'), Token('^'), Token('/')] + self.tokens
         
     def tokenize_file(self, inp_file, out_file):
         with open(inp_file, 'r', encoding='utf-8') as file:
@@ -179,8 +192,10 @@ class BPEncoder:
             
         return [[itos[t] for t in line] for line in data]
     
+'''
 b = BPEncoder()
-b.load_tokens('langgpt/data/tokens.json')
-b.learn('langgpt/data/data.txt', 600)
-#b.save_tokens('langgpt/data/tokens2.json')
-#b.tokenize_file('langgpt/data/sp.txt', 'langgpt/data/sp_e.txt')
+#b.load_tokens('langgpt/data/tokens2.json')
+b.learn('langgpt/data/data.txt', 750)
+b.save_tokens('langgpt/data/tokens2.json')
+b.tokenize_file('langgpt/data/data.txt', 'langgpt/data/data_e750.txt')
+'''

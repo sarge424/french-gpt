@@ -18,12 +18,12 @@ dropout = 0.0
 
 #Read and encode the data
 print('reading data...')
-data = open('langgpt/data/data_e2.txt', 'r', encoding='utf-8')
+data = open('langgpt/data/data_e750.txt', 'r', encoding='utf-8')
 data = [['^'] + line.split() + ['*'] for line in data.read().splitlines()[:101]]
 
 print('encoding...')
 bpe = BPEncoder()
-bpe.load_tokens('langgpt/data/tokens.json')
+bpe.load_tokens('langgpt/data/tokens750.json')
 data = bpe.encode(data)
 
 
