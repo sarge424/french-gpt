@@ -11,18 +11,18 @@ Run `test.py` to see the model's output for any given input.
 ## Example
 Here is a few sample sentences translated by the model:
 ```
-i need to buy some groceries .
-j'ai besoin d'acheter des grosses grosses . 
+ENG: i need to buy some groceries .
+FRE: j'ai besoin d'acheter des grosses grosses . 
 
-he is studying hard for his exams .
-il étudie dur pour ses examens .   
+ENG: he is studying hard for his exams .
+FRE: il étudie dur pour ses examens .   
 
-can you please pass me the salt ?
-pouvez -vous me passer le sel ?  
+ENG: can you please pass me the salt ?
+FRE: pouvez -vous me passer le sel ?  
 
-she is learning to play the piano .
-elle apprend à jouer du piano .    
+ENG: she is learning to play the piano .
+FRE: elle apprend à jouer du piano .    
 
-we enjoyed a delicious dinner at the restaurant .     
-nous avons apprécié un dîner délicieux au restaurant .
+ENG: we enjoyed a delicious dinner at the restaurant .     
+FRE: nous avons apprécié un dîner délicieux au restaurant .
 ```
