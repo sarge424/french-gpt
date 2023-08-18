@@ -4,8 +4,10 @@ The model uses byte-pair encoding to tokenize the dataset before training.
 The model was trained using this dataset: https://www.kaggle.com/datasets/dhruvildave/en-fr-translation-dataset
 
 ## Usage
-Use `tokenizer.py` to split and save the tokens for a dataset
-Run `train.py` to train the model on a the tokenized dataset
+Use `tokenizer.py` to split and save the tokens for a dataset.
+
+Run `train.py` to train the model on a the tokenized dataset.
+
 Run `test.py` to see the model's output for any given input.
 
 ## Example
